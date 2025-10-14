@@ -27,7 +27,7 @@
         android:id="@+id/capture_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Capture & Analyze"
+        android:text="Capture &amp; Analyze"
         android:layout_gravity="center"
         android:backgroundTint="@color/purple_500"
         android:textColor="@color/white"
