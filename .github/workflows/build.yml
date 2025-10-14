@@ -20,20 +20,20 @@ jobs:
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
-      with:
-        api-level: 34
-        build-tools-version: 34.0.0
-        ndk-version: false
-        cmake-version: false
 
     - name: Build with Gradle
       run: |
-        chmod +x gradlew
-        ./gradlew assembleDebug --stacktrace
+        # Install Gradle
+        wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
+        unzip -q gradle-8.4-bin.zip
+        export PATH=$PWD/gradle-8.4/bin:$PATH
+        
+        # Build the app
+        gradle assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: DermoMask-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+        path: app/build/outputs/apk/debug/*.apk
         retention-days: 7
