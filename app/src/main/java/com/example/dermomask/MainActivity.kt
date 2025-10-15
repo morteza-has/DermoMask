@@ -197,19 +197,19 @@ class MainActivity : AppCompatActivity() {
     private fun runModelInference(bitmap: Bitmap) {
         Thread {
             try {
-                // Convert bitmap to TensorImage
-                var image = TensorImage(DataType.FLOAT32)
-                image.load(bitmap)
+                // Convert bitmap to TensorImage with explicit DataType
+                val image = TensorImage(DataType.FLOAT32) // Explicitly set to FLOAT32 for unquantized model
+                image.load(resizedBitmap) // Load the resized bitmap
                 
                 // Create image processor (adjust based on your model's requirements)
                 val imageProcessor = ImageProcessor.Builder()
                     .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
                     .build()
                 
-                image = imageProcessor.process(image)
+                val processedImage = imageProcessor.process(image)
                 
                 // Prepare input and output buffers
-                val input = arrayOf(image.tensorBuffer.buffer)
+                val input = arrayOf(processedImage.buffer) // Use the processed TensorImage buffer
                 val output = Array(1) { FloatArray(labels.size) } // Shape [1, 5] to match model output
                 
                 // Run inference
