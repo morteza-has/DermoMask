@@ -1,277 +1,128 @@
-package com.example.dermomask
+package your.package.name
 
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
-import android.widget.Toast
+import android.widget.ImageButton
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.*
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import org.tensorflow.lite.DataType
-import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.support.common.FileUtil
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var cameraPreview: androidx.camera.view.PreviewView
-    private lateinit var captureButton: Button
-    private lateinit var switchCameraButton: Button
-    private lateinit var loadingOverlay: FrameLayout // Changed from ProgressBar
 
-    private var imageCapture: ImageCapture? = null
-    private lateinit var cameraExecutor: ExecutorService
-    private var lensFacing = CameraSelector.LENS_FACING_BACK
-    private var cameraProvider: ProcessCameraProvider? = null
-    private var tflite: Interpreter? = null
+    private lateinit var tvExplanation: TextView
+    private lateinit var btnOpenCamera: Button
+    private lateinit var btnChooseGallery: Button
+    private lateinit var cameraContainer: FrameLayout
+    private lateinit var cameraPreviewHolder: FrameLayout
+    private lateinit var btnCloseCamera: ImageButton
 
-    private val labels = listOf(
-        "acne",
-        "dark circle under eye",
-        "Dermo Mask-Black Head",
-        "sun spot and damage",
-        "Normal"
-    )
+    // Request code fallbacks (not used if Activity Result APIs below are preferred)
+    private val CAMERA_PERMISSION = Manifest.permission.CAMERA
 
-    companion object {
-        private const val REQUEST_CAMERA_PERMISSION = 100
-        private const val MODEL_INPUT_SIZE = 224
+    // Gallery chooser using Activity Result API
+    private val pickImageFromGallery = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { handleImageFromUri(it) }
+    }
+
+    // Permission launcher for camera
+    private val requestCameraPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            openCameraPreview()
+        } else {
+            // Permission denied: keep showing explanation and buttons
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initViews()
-        setupTensorFlowLite()
-        setupCamera()
+        tvExplanation = findViewById(R.id.tvExplanation)
+        btnOpenCamera = findViewById(R.id.btnOpenCamera)
+        btnChooseGallery = findViewById(R.id.btnChooseGallery)
+        cameraContainer = findViewById(R.id.cameraContainer)
+        cameraPreviewHolder = findViewById(R.id.cameraPreviewHolder)
+        btnCloseCamera = findViewById(R.id.btnCloseCamera)
 
-        captureButton.setOnClickListener {
-            takePhoto()
+        btnOpenCamera.setOnClickListener {
+            when (ContextCompat.checkSelfPermission(this, CAMERA_PERMISSION)) {
+                PackageManager.PERMISSION_GRANTED -> openCameraPreview()
+                else -> requestCameraPermission.launch(CAMERA_PERMISSION)
+            }
         }
 
-        switchCameraButton.setOnClickListener {
-            switchCamera()
+        btnChooseGallery.setOnClickListener {
+            // mime type image/*
+            pickImageFromGallery.launch("image/*")
+        }
+
+        btnCloseCamera.setOnClickListener {
+            closeCameraPreview()
         }
     }
 
-    private fun initViews() {
-        cameraPreview = findViewById(R.id.camera_preview)
-        captureButton = findViewById(R.id.capture_button)
-        switchCameraButton = findViewById(R.id.switch_camera_button)
-        loadingOverlay = findViewById(R.id.loading_overlay) // Updated to get the overlay
-    }
+    private fun openCameraPreview() {
+        // Show camera UI
+        cameraContainer.visibility = View.VISIBLE
+        tvExplanation.visibility = View.GONE
+        btnOpenCamera.visibility = View.GONE
+        btnChooseGallery.visibility = View.GONE
 
-    private fun setupTensorFlowLite() {
+        // Replace/insert your camera UI into cameraPreviewHolder.
+        // If your project already uses a CameraFragment (or similar), instantiate and attach it here.
+        // Example using a CameraFragment class already present in the project:
         try {
-            val model = FileUtil.loadMappedFile(this, "model_unquant.tflite")
-            tflite = Interpreter(model)
-            Toast.makeText(this, "Model loaded successfully", Toast.LENGTH_SHORT).show()
+            val fragment = CameraFragment() // change class name if needed
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.cameraPreviewHolder, fragment, "camera_fragment")
+                .commitAllowingStateLoss()
         } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Failed to load model: ${e.message}", Toast.LENGTH_LONG).show()
+            // If CameraFragment is not available or you want CameraX directly, implement CameraX preview inflation here.
+            // Minimal fallback: show a placeholder view or implement CameraX preview programmatically.
         }
     }
 
-    private fun setupCamera() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera()
-        } else {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
+    private fun closeCameraPreview() {
+        // Remove camera fragment or teardown CameraX here
+        val frag = supportFragmentManager.findFragmentByTag("camera_fragment")
+        if (frag != null) {
+            supportFragmentManager.beginTransaction().remove(frag).commitAllowingStateLoss()
         }
-        cameraExecutor = Executors.newSingleThreadExecutor()
+        // Clear preview holder views in case something was added programmatically
+        cameraPreviewHolder.removeAllViews()
+
+        // Restore initial UI
+        cameraContainer.visibility = View.GONE
+        tvExplanation.visibility = View.VISIBLE
+        btnOpenCamera.visibility = View.VISIBLE
+        btnChooseGallery.visibility = View.VISIBLE
     }
 
-    private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
-            bindCameraUseCases()
-        }, ContextCompat.getMainExecutor(this))
+    private fun handleImageFromUri(uri: Uri) {
+        // Integrate with your existing image processing flow (e.g., send to segmentation/classifier)
+        // Example: start existing activity that handles the selected image
+        val intent = Intent(this, ResultActivity::class.java)
+        intent.data = uri
+        startActivity(intent)
     }
 
-    private fun bindCameraUseCases() {
-        val cameraProvider = cameraProvider ?: return
-        cameraProvider.unbindAll()
-
-        val cameraSelector = CameraSelector.Builder()
-            .requireLensFacing(lensFacing)
-            .build()
-
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(cameraPreview.surfaceProvider)
+    override fun onBackPressed() {
+        if (cameraContainer.visibility == View.VISIBLE) {
+            closeCameraPreview()
+            return
         }
-
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .build()
-
-        try {
-            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-        } catch (exc: Exception) {
-            Toast.makeText(this, "Camera failed to start: ${exc.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun switchCamera() {
-        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-            CameraSelector.LENS_FACING_FRONT
-        } else {
-            CameraSelector.LENS_FACING_BACK
-        }
-        bindCameraUseCases()
-    }
-
-    private fun takePhoto() {
-        val imageCapture = imageCapture ?: return
-
-        // --- CHANGE HERE: Show the overlay ---
-        loadingOverlay.visibility = View.VISIBLE
-        captureButton.isEnabled = false
-        switchCameraButton.isEnabled = false
-
-        imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
-            override fun onCaptureSuccess(image: ImageProxy) {
-                val bitmap = image.toBitmap()
-                image.close()
-                analyzeImage(bitmap)
-            }
-
-            override fun onError(exception: ImageCaptureException) {
-                super.onError(exception)
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Capture failed: ${exception.message}", Toast.LENGTH_SHORT).show()
-                    // --- CHANGE HERE: Hide the overlay on error ---
-                    loadingOverlay.visibility = View.GONE
-                    captureButton.isEnabled = true
-                    switchCameraButton.isEnabled = true
-                }
-            }
-        })
-    }
-
-    private fun analyzeImage(bitmap: Bitmap) {
-        if (tflite != null) {
-            runModelInference(bitmap)
-        } else {
-            Toast.makeText(this, "Model is not loaded yet.", Toast.LENGTH_SHORT).show()
-            // --- CHANGE HERE: Hide the overlay if model isn't ready ---
-            loadingOverlay.visibility = View.GONE
-            captureButton.isEnabled = true
-            switchCameraButton.isEnabled = true
-        }
-    }
-
-    private fun runModelInference(bitmap: Bitmap) {
-        Thread {
-            try {
-                var tensorImage = TensorImage(DataType.FLOAT32)
-                tensorImage.load(bitmap)
-                val imageProcessor = ImageProcessor.Builder()
-                    .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
-                    .build()
-                tensorImage = imageProcessor.process(tensorImage)
-
-                val output = Array(1) { FloatArray(labels.size) }
-                tflite?.run(tensorImage.tensorBuffer.buffer, output)
-
-                val probabilities = output[0]
-                val (maxIndex, maxConfidence) = findMaxProbability(probabilities)
-                val imageUri = saveBitmapToCache(bitmap)
-
-                runOnUiThread {
-                    if (imageUri != null) {
-                        val intent = Intent(this, ResultActivity::class.java).apply {
-                            putExtra("CONDITION_NAME", labels[maxIndex])
-                            putExtra("CONFIDENCE", maxConfidence * 100)
-                            putExtra("IMAGE_URI", imageUri.toString())
-                        }
-                        startActivity(intent)
-                    } else {
-                        Toast.makeText(this, "Failed to save image.", Toast.LENGTH_SHORT).show()
-                    }
-                    // --- CHANGE HERE: Hide overlay just before leaving ---
-                    // This is now done in onResume() for better UX
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    Toast.makeText(this, "Model inference error: ${e.message}", Toast.LENGTH_LONG).show()
-                    // --- CHANGE HERE: Hide overlay on error ---
-                    loadingOverlay.visibility = View.GONE
-                    captureButton.isEnabled = true
-                    switchCameraButton.isEnabled = true
-                }
-            }
-        }.start()
-    }
-
-    // Add this onResume method to hide the loading when you return to this screen
-    override fun onResume() {
-        super.onResume()
-        // Hide loading and re-enable buttons in case user presses back
-        loadingOverlay.visibility = View.GONE
-        captureButton.isEnabled = true
-        switchCameraButton.isEnabled = true
-    }
-
-    private fun saveBitmapToCache(bitmap: Bitmap): Uri? {
-        return try {
-            val file = File(cacheDir, "captured_image.png")
-            val fOut = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut)
-            fOut.flush()
-            fOut.close()
-            Uri.fromFile(file)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
-    private fun findMaxProbability(probabilities: FloatArray): Pair<Int, Float> {
-        var maxIndex = 0
-        var maxProbability = probabilities[0]
-        for (i in 1 until probabilities.size) {
-            if (probabilities[i] > maxProbability) {
-                maxProbability = probabilities[i]
-                maxIndex = i
-            }
-        }
-        return Pair(maxIndex, maxProbability)
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startCamera()
-            } else {
-                Toast.makeText(this, "Camera permission is required", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        tflite?.close()
-        cameraExecutor.shutdown()
+        super.onBackPressed()
     }
 }
