@@ -194,45 +194,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun runModelInference(bitmap: Bitmap) {
-        Thread {
-            try {
-                // Convert bitmap to TensorImage with explicit DataType
-                val image = TensorImage(DataType.FLOAT32) // Explicitly set to FLOAT32 for unquantized model
-                image.load(resizedBitmap) // Load the resized bitmap
-                
-                // Create image processor (adjust based on your model's requirements)
-                val imageProcessor = ImageProcessor.Builder()
-                    .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
-                    .build()
-                
-                val processedImage = imageProcessor.process(image)
-                
-                // Prepare input and output buffers
-                val input = arrayOf(processedImage.buffer) // Use the processed TensorImage buffer
-                val output = Array(1) { FloatArray(labels.size) } // Shape [1, 5] to match model output
-                
-                // Run inference
-                tflite?.run(input, output) // Simplified inference call
-                
-                // Process results
-                val probabilities = output[0]
-                val (maxIndex, maxConfidence) = findMaxProbability(probabilities)
-                
-                runOnUiThread {
-                    displayResults(labels[maxIndex], maxConfidence * 100)
-                }
-                
-            } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    Toast.makeText(this, "Model inference error: ${e.message}", Toast.LENGTH_LONG).show()
-                    // Fallback to simulation
-                    runSimulatedAnalysis()
-                }
+private fun runModelInference(bitmap: Bitmap) {
+    Thread {
+        try {
+            // Convert bitmap to TensorImage
+            var image = TensorImage(DataType.FLOAT32)
+            image.load(bitmap)
+
+            // Create image processor (this part is fine)
+            val imageProcessor = ImageProcessor.Builder()
+                .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
+                .build()
+
+            image = imageProcessor.process(image)
+
+            // --- START OF CHANGES ---
+
+            // 1. Define an output array with the correct shape [1][5]
+            // This creates an Array containing one FloatArray of size 5.
+            val output = Array(1) { FloatArray(labels.size) }
+
+            // 2. Use the standard .run() method.
+            // It correctly maps the model's input buffer to the model's output array.
+            tflite?.run(image.tensorBuffer.buffer, output)
+
+            // --- END OF CHANGES ---
+
+            // Process results
+            // The probabilities are in the first (and only) element of the output array.
+            val probabilities = output[0]
+            val (maxIndex, maxConfidence) = findMaxProbability(probabilities)
+
+            runOnUiThread {
+                displayResults(labels[maxIndex], maxConfidence * 100)
             }
-        }.start()
-    }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            runOnUiThread {
+                Toast.makeText(this, "Model inference error: ${e.message}", Toast.LENGTH_LONG).show()
+                // Fallback to simulation
+                runSimulatedAnalysis()
+            }
+        }
+    }.start()
+}
     
     private fun findMaxProbability(probabilities: FloatArray): Pair<Int, Float> {
         var maxIndex = 0
