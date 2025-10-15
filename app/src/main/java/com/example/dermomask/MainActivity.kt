@@ -1,11 +1,12 @@
 package com.example.dermomask
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -18,7 +19,8 @@ import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import java.nio.ByteBuffer
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -26,58 +28,54 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraPreview: androidx.camera.view.PreviewView
     private lateinit var captureButton: Button
     private lateinit var switchCameraButton: Button
-    private lateinit var resultText: TextView
-    private lateinit var confidenceText: TextView
     private lateinit var progressBar: android.widget.ProgressBar
-    
+
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var cameraProvider: ProcessCameraProvider? = null
     private var tflite: Interpreter? = null
-    
+
     private val labels = listOf(
         "acne",
-        "dark circle under eye", 
+        "dark circle under eye",
         "Dermo Mask-Black Head",
         "sun spot and damage",
         "Normal"
     )
-    
+
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
-        private const val MODEL_INPUT_SIZE = 224 // Common size for mobile models, adjust if your model is different
+        private const val MODEL_INPUT_SIZE = 224
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        
+
         initViews()
         setupTensorFlowLite()
         setupCamera()
-        
+
         captureButton.setOnClickListener {
             takePhoto()
         }
-        
+
         switchCameraButton.setOnClickListener {
             switchCamera()
         }
     }
-    
+
     private fun initViews() {
         cameraPreview = findViewById(R.id.camera_preview)
         captureButton = findViewById(R.id.capture_button)
         switchCameraButton = findViewById(R.id.switch_camera_button)
-        resultText = findViewById(R.id.result_text)
-        confidenceText = findViewById(R.id.confidence_text)
         progressBar = findViewById(R.id.progress_bar)
+        // Removed resultText and confidenceText as they are now in ResultActivity
     }
-    
+
     private fun setupTensorFlowLite() {
         try {
-            // Load the TensorFlow Lite model
             val model = FileUtil.loadMappedFile(this, "model_unquant.tflite")
             tflite = Interpreter(model)
             Toast.makeText(this, "Model loaded successfully", Toast.LENGTH_SHORT).show()
@@ -86,7 +84,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Failed to load model: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-    
+
     private fun setupCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
@@ -95,43 +93,40 @@ class MainActivity : AppCompatActivity() {
         }
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
-    
+
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        
         cameraProviderFuture.addListener({
             cameraProvider = cameraProviderFuture.get()
             bindCameraUseCases()
         }, ContextCompat.getMainExecutor(this))
     }
-    
+
     private fun bindCameraUseCases() {
         val cameraProvider = cameraProvider ?: return
-        
-        // Unbind all use cases before rebinding
         cameraProvider.unbindAll()
-        
+
         val cameraSelector = CameraSelector.Builder()
             .requireLensFacing(lensFacing)
             .build()
-        
+
         val preview = Preview.Builder()
             .build()
             .also {
                 it.setSurfaceProvider(cameraPreview.surfaceProvider)
             }
-        
+
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .build()
-        
+
         try {
             cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
         } catch (exc: Exception) {
             Toast.makeText(this, "Camera failed to start: ${exc.message}", Toast.LENGTH_LONG).show()
         }
     }
-    
+
     private fun switchCamera() {
         lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
             CameraSelector.LENS_FACING_FRONT
@@ -140,24 +135,22 @@ class MainActivity : AppCompatActivity() {
         }
         bindCameraUseCases()
     }
-    
+
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return
-        
+
         progressBar.visibility = android.view.View.VISIBLE
         captureButton.isEnabled = false
         switchCameraButton.isEnabled = false
-        
+
         imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                super.onCaptureSuccess(image)
-                
+                // IMPORTANT: Convert to bitmap *before* closing the image proxy
                 val bitmap = image.toBitmap()
-                analyzeImage(bitmap)
-                
                 image.close()
+                analyzeImage(bitmap)
             }
-            
+
             override fun onError(exception: ImageCaptureException) {
                 super.onError(exception)
                 runOnUiThread {
@@ -169,110 +162,65 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-    
+
     private fun analyzeImage(bitmap: Bitmap) {
-        try {
-            // Preprocess the image
-            val resizedBitmap = Bitmap.createScaledBitmap(bitmap, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, true)
-            
-            if (tflite != null) {
-                // Run real model inference
-                runModelInference(resizedBitmap)
-            } else {
-                // Fallback to simulation if model isn't loaded
-                runSimulatedAnalysis()
-            }
-            
-        } catch (e: Exception) {
-            e.printStackTrace()
-            runOnUiThread {
-                Toast.makeText(this, "Analysis failed: ${e.message}", Toast.LENGTH_LONG).show()
-                progressBar.visibility = android.view.View.GONE
-                captureButton.isEnabled = true
-                switchCameraButton.isEnabled = true
-            }
+        if (tflite != null) {
+            runModelInference(bitmap)
+        } else {
+            Toast.makeText(this, "Model is not loaded yet.", Toast.LENGTH_SHORT).show()
+            progressBar.visibility = android.view.View.GONE
+            captureButton.isEnabled = true
+            switchCameraButton.isEnabled = true
         }
     }
-    
-private fun runModelInference(bitmap: Bitmap) {
-    Thread {
-        try {
-            // Convert bitmap to TensorImage
-            var image = TensorImage(DataType.FLOAT32)
-            image.load(bitmap)
 
-            // Create image processor (this part is fine)
-            val imageProcessor = ImageProcessor.Builder()
-                .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
-                .build()
-
-            image = imageProcessor.process(image)
-
-            // --- START OF CHANGES ---
-
-            // 1. Define an output array with the correct shape [1][5]
-            // This creates an Array containing one FloatArray of size 5.
-            val output = Array(1) { FloatArray(labels.size) }
-
-            // 2. Use the standard .run() method.
-            // It correctly maps the model's input buffer to the model's output array.
-            tflite?.run(image.tensorBuffer.buffer, output)
-
-            // --- END OF CHANGES ---
-
-            // Process results
-            // The probabilities are in the first (and only) element of the output array.
-            val probabilities = output[0]
-            val (maxIndex, maxConfidence) = findMaxProbability(probabilities)
-
-            runOnUiThread {
-                displayResults(labels[maxIndex], maxConfidence * 100)
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            runOnUiThread {
-                Toast.makeText(this, "Model inference error: ${e.message}", Toast.LENGTH_LONG).show()
-                // Fallback to simulation
-                runSimulatedAnalysis()
-            }
-        }
-    }.start()
-}
-    
-    private fun findMaxProbability(probabilities: FloatArray): Pair<Int, Float> {
-        var maxIndex = 0
-        var maxProbability = probabilities[0]
-        
-        for (i in 1 until probabilities.size) {
-            if (probabilities[i] > maxProbability) {
-                maxProbability = probabilities[i]
-                maxIndex = i
-            }
-        }
-        
-        return Pair(maxIndex, maxProbability)
-    }
-    
-    private fun runSimulatedAnalysis() {
+    private fun runModelInference(bitmap: Bitmap) {
         Thread {
             try {
-                // Simulate processing time
-                Thread.sleep(2000)
-                
-                // Simulate a classification result
-                val randomIndex = (0 until labels.size).random()
-                val confidence = (70..95).random().toFloat()
-                val conditionName = labels[randomIndex]
-                
+                // Preprocess the image
+                var tensorImage = TensorImage(DataType.FLOAT32)
+                tensorImage.load(bitmap)
+                val imageProcessor = ImageProcessor.Builder()
+                    .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
+                    .build()
+                tensorImage = imageProcessor.process(tensorImage)
+
+                // Define the output buffer with the correct shape: [1, 5]
+                val output = Array(1) { FloatArray(labels.size) }
+
+                // Run inference
+                tflite?.run(tensorImage.tensorBuffer.buffer, output)
+
+                // Process results
+                val probabilities = output[0]
+                val (maxIndex, maxConfidence) = findMaxProbability(probabilities)
+
+                // Save the original bitmap and get its URI
+                val imageUri = saveBitmapToCache(bitmap)
+
                 runOnUiThread {
-                    displayResults(conditionName, confidence, isSimulated = true)
+                    // Reset UI before launching new activity
+                    progressBar.visibility = android.view.View.GONE
+                    captureButton.isEnabled = true
+                    switchCameraButton.isEnabled = true
+
+                    if (imageUri != null) {
+                        // Launch ResultActivity
+                        val intent = Intent(this, ResultActivity::class.java).apply {
+                            putExtra("CONDITION_NAME", labels[maxIndex])
+                            putExtra("CONFIDENCE", maxConfidence * 100)
+                            putExtra("IMAGE_URI", imageUri.toString())
+                        }
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "Failed to save image.", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 runOnUiThread {
-                    Toast.makeText(this, "Analysis error", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Model inference error: ${e.message}", Toast.LENGTH_LONG).show()
                     progressBar.visibility = android.view.View.GONE
                     captureButton.isEnabled = true
                     switchCameraButton.isEnabled = true
@@ -280,45 +228,33 @@ private fun runModelInference(bitmap: Bitmap) {
             }
         }.start()
     }
-    
-    private fun displayResults(conditionName: String, confidence: Float, isSimulated: Boolean = false) {
-        val resultMessage = if (isSimulated) {
-            "Simulated: $conditionName"
-        } else {
-            "Detected: $conditionName"
+
+    private fun saveBitmapToCache(bitmap: Bitmap): Uri? {
+        return try {
+            val file = File(cacheDir, "captured_image.png")
+            val fOut = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut)
+            fOut.flush()
+            fOut.close()
+            Uri.fromFile(file)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        
-        resultText.text = resultMessage
-        confidenceText.text = "Confidence: ${"%.2f".format(confidence)}%"
-        
-        // Color code based on confidence
-        when {
-            confidence > 80 -> {
-                resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
-                confidenceText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
-            }
-            confidence > 60 -> {
-                resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
-                confidenceText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
-            }
-            else -> {
-                resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
-                confidenceText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
-            }
-        }
-        
-        progressBar.visibility = android.view.View.GONE
-        captureButton.isEnabled = true
-        switchCameraButton.isEnabled = true
-        
-        val toastMessage = if (isSimulated) {
-            "Simulated analysis complete!"
-        } else {
-            "Model analysis complete!"
-        }
-        Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
     }
-    
+
+    private fun findMaxProbability(probabilities: FloatArray): Pair<Int, Float> {
+        var maxIndex = 0
+        var maxProbability = probabilities[0]
+        for (i in 1 until probabilities.size) {
+            if (probabilities[i] > maxProbability) {
+                maxProbability = probabilities[i]
+                maxIndex = i
+            }
+        }
+        return Pair(maxIndex, maxProbability)
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -333,7 +269,7 @@ private fun runModelInference(bitmap: Bitmap) {
             }
         }
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         tflite?.close()
