@@ -18,7 +18,6 @@ import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.image.ops.Rot90Op
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -205,18 +204,16 @@ class MainActivity : AppCompatActivity() {
                 // Create image processor (adjust based on your model's requirements)
                 val imageProcessor = ImageProcessor.Builder()
                     .add(ResizeOp(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, ResizeOp.ResizeMethod.BILINEAR))
-                    // Add more preprocessing steps if your model requires them
-                    // .add(NormalizeOp(0f, 255f)) // Example normalization
                     .build()
                 
                 image = imageProcessor.process(image)
                 
                 // Prepare input and output buffers
                 val input = arrayOf(image.tensorBuffer.buffer)
-                val output = Array(1) { FloatArray(labels.size) } // Assuming your model outputs probabilities for each class
+                val output = Array(1) { FloatArray(labels.size) } // Shape [1, 5] to match model output
                 
                 // Run inference
-                tflite?.runForMultipleInputsOutputs(input, mapOf(0 to output[0]))
+                tflite?.run(input, output) // Simplified inference call
                 
                 // Process results
                 val probabilities = output[0]
