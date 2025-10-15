@@ -6,7 +6,9 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -28,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraPreview: androidx.camera.view.PreviewView
     private lateinit var captureButton: Button
     private lateinit var switchCameraButton: Button
-    private lateinit var progressBar: android.widget.ProgressBar
+    private lateinit var loadingOverlay: FrameLayout // Changed from ProgressBar
 
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
@@ -70,8 +72,7 @@ class MainActivity : AppCompatActivity() {
         cameraPreview = findViewById(R.id.camera_preview)
         captureButton = findViewById(R.id.capture_button)
         switchCameraButton = findViewById(R.id.switch_camera_button)
-        progressBar = findViewById(R.id.progress_bar)
-        // Removed resultText and confidenceText as they are now in ResultActivity
+        loadingOverlay = findViewById(R.id.loading_overlay) // Updated to get the overlay
     }
 
     private fun setupTensorFlowLite() {
@@ -110,11 +111,9 @@ class MainActivity : AppCompatActivity() {
             .requireLensFacing(lensFacing)
             .build()
 
-        val preview = Preview.Builder()
-            .build()
-            .also {
-                it.setSurfaceProvider(cameraPreview.surfaceProvider)
-            }
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(cameraPreview.surfaceProvider)
+        }
 
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
@@ -139,13 +138,13 @@ class MainActivity : AppCompatActivity() {
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return
 
-        progressBar.visibility = android.view.View.VISIBLE
+        // --- CHANGE HERE: Show the overlay ---
+        loadingOverlay.visibility = View.VISIBLE
         captureButton.isEnabled = false
         switchCameraButton.isEnabled = false
 
         imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                // IMPORTANT: Convert to bitmap *before* closing the image proxy
                 val bitmap = image.toBitmap()
                 image.close()
                 analyzeImage(bitmap)
@@ -155,7 +154,8 @@ class MainActivity : AppCompatActivity() {
                 super.onError(exception)
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, "Capture failed: ${exception.message}", Toast.LENGTH_SHORT).show()
-                    progressBar.visibility = android.view.View.GONE
+                    // --- CHANGE HERE: Hide the overlay on error ---
+                    loadingOverlay.visibility = View.GONE
                     captureButton.isEnabled = true
                     switchCameraButton.isEnabled = true
                 }
@@ -168,7 +168,8 @@ class MainActivity : AppCompatActivity() {
             runModelInference(bitmap)
         } else {
             Toast.makeText(this, "Model is not loaded yet.", Toast.LENGTH_SHORT).show()
-            progressBar.visibility = android.view.View.GONE
+            // --- CHANGE HERE: Hide the overlay if model isn't ready ---
+            loadingOverlay.visibility = View.GONE
             captureButton.isEnabled = true
             switchCameraButton.isEnabled = true
         }
@@ -177,7 +178,6 @@ class MainActivity : AppCompatActivity() {
     private fun runModelInference(bitmap: Bitmap) {
         Thread {
             try {
-                // Preprocess the image
                 var tensorImage = TensorImage(DataType.FLOAT32)
                 tensorImage.load(bitmap)
                 val imageProcessor = ImageProcessor.Builder()
@@ -185,27 +185,15 @@ class MainActivity : AppCompatActivity() {
                     .build()
                 tensorImage = imageProcessor.process(tensorImage)
 
-                // Define the output buffer with the correct shape: [1, 5]
                 val output = Array(1) { FloatArray(labels.size) }
-
-                // Run inference
                 tflite?.run(tensorImage.tensorBuffer.buffer, output)
 
-                // Process results
                 val probabilities = output[0]
                 val (maxIndex, maxConfidence) = findMaxProbability(probabilities)
-
-                // Save the original bitmap and get its URI
                 val imageUri = saveBitmapToCache(bitmap)
 
                 runOnUiThread {
-                    // Reset UI before launching new activity
-                    progressBar.visibility = android.view.View.GONE
-                    captureButton.isEnabled = true
-                    switchCameraButton.isEnabled = true
-
                     if (imageUri != null) {
-                        // Launch ResultActivity
                         val intent = Intent(this, ResultActivity::class.java).apply {
                             putExtra("CONDITION_NAME", labels[maxIndex])
                             putExtra("CONFIDENCE", maxConfidence * 100)
@@ -215,18 +203,29 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         Toast.makeText(this, "Failed to save image.", Toast.LENGTH_SHORT).show()
                     }
+                    // --- CHANGE HERE: Hide overlay just before leaving ---
+                    // This is now done in onResume() for better UX
                 }
-
             } catch (e: Exception) {
                 e.printStackTrace()
                 runOnUiThread {
                     Toast.makeText(this, "Model inference error: ${e.message}", Toast.LENGTH_LONG).show()
-                    progressBar.visibility = android.view.View.GONE
+                    // --- CHANGE HERE: Hide overlay on error ---
+                    loadingOverlay.visibility = View.GONE
                     captureButton.isEnabled = true
                     switchCameraButton.isEnabled = true
                 }
             }
         }.start()
+    }
+
+    // Add this onResume method to hide the loading when you return to this screen
+    override fun onResume() {
+        super.onResume()
+        // Hide loading and re-enable buttons in case user presses back
+        loadingOverlay.visibility = View.GONE
+        captureButton.isEnabled = true
+        switchCameraButton.isEnabled = true
     }
 
     private fun saveBitmapToCache(bitmap: Bitmap): Uri? {
