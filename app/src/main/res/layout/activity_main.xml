@@ -1,81 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="@color/white">
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="DermoMask"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:textColor="@color/black"
-        android:layout_marginBottom="20dp" />
+    tools:context=".MainActivity">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/camera_preview"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:layout_gravity="center"
-        android:layout_marginBottom="20dp" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="20dp">
-
-        <Button
-            android:id="@+id/switch_camera_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Switch Camera"
-            android:backgroundTint="@color/purple_700"
-            android:textColor="@color/white"
-            android:layout_marginEnd="10dp" />
-
-        <Button
-            android:id="@+id/capture_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Capture &amp; Analyze"
-            android:backgroundTint="@color/purple_500"
-            android:textColor="@color/white"
-            android:layout_marginStart="10dp" />
-
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/result_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Take a picture to analyze your skin condition"
-        android:textSize="18sp"
-        android:gravity="center"
-        android:textColor="@color/black"
-        android:padding="16dp"
-        android:background="@color/light_gray"
-        android:layout_marginBottom="10dp" />
-
-    <TextView
-        android:id="@+id/confidence_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="14sp"
-        android:gravity="center"
-        android:textColor="@color/gray" />
-
-    <ProgressBar
-        android:id="@+id/progress_bar"
+    <Button
+        android:id="@+id/switch_camera_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Switch"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-</LinearLayout>
+    <Button
+        android:id="@+id/capture_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="32dp"
+        android:text="Capture &amp; Analyze"
+        android:textSize="16sp"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <FrameLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Analyzing..."
+                android:textColor="@android:color/white"
+                android:textSize="18sp"/>
+        </LinearLayout>
+    </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
