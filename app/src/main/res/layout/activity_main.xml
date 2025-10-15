@@ -23,15 +23,32 @@
         android:layout_gravity="center"
         android:layout_marginBottom="20dp" />
 
-    <Button
-        android:id="@+id/capture_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Capture &amp; Analyze"
-        android:layout_gravity="center"
-        android:backgroundTint="@color/purple_500"
-        android:textColor="@color/white"
-        android:layout_marginBottom="20dp" />
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="20dp">
+
+        <Button
+            android:id="@+id/switch_camera_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Switch Camera"
+            android:backgroundTint="@color/purple_700"
+            android:textColor="@color/white"
+            android:layout_marginEnd="10dp" />
+
+        <Button
+            android:id="@+id/capture_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Capture &amp; Analyze"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@color/white"
+            android:layout_marginStart="10dp" />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/result_text"
