@@ -16,19 +16,21 @@ import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.model.Model
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     private lateinit var cameraPreview: androidx.camera.view.PreviewView
     private lateinit var captureButton: Button
+    private lateinit var switchCameraButton: Button
     private lateinit var resultText: TextView
     private lateinit var confidenceText: TextView
     private lateinit var progressBar: android.widget.ProgressBar
     
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
+    private var lensFacing = CameraSelector.LENS_FACING_BACK
+    private var cameraProvider: ProcessCameraProvider? = null
     
     private val labels = listOf(
         "acne",
@@ -52,11 +54,16 @@ class MainActivity : AppCompatActivity() {
         captureButton.setOnClickListener {
             takePhoto()
         }
+        
+        switchCameraButton.setOnClickListener {
+            switchCamera()
+        }
     }
     
     private fun initViews() {
         cameraPreview = findViewById(R.id.camera_preview)
         captureButton = findViewById(R.id.capture_button)
+        switchCameraButton = findViewById(R.id.switch_camera_button)
         resultText = findViewById(R.id.result_text)
         confidenceText = findViewById(R.id.confidence_text)
         progressBar = findViewById(R.id.progress_bar)
@@ -75,23 +82,45 @@ class MainActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-            
-            val preview = Preview.Builder().build().also {
+            cameraProvider = cameraProviderFuture.get()
+            bindCameraUseCases()
+        }, ContextCompat.getMainExecutor(this))
+    }
+    
+    private fun bindCameraUseCases() {
+        val cameraProvider = cameraProvider ?: return
+        
+        // Unbind all use cases before rebinding
+        cameraProvider.unbindAll()
+        
+        val cameraSelector = CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .build()
+        
+        val preview = Preview.Builder()
+            .build()
+            .also {
                 it.setSurfaceProvider(cameraPreview.surfaceProvider)
             }
-            
-            imageCapture = ImageCapture.Builder().build()
-            
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-            
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-            } catch (exc: Exception) {
-                Toast.makeText(this, "Camera failed to start: ${exc.message}", Toast.LENGTH_LONG).show()
-            }
-        }, ContextCompat.getMainExecutor(this))
+        
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+        
+        try {
+            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+        } catch (exc: Exception) {
+            Toast.makeText(this, "Camera failed to start: ${exc.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    private fun switchCamera() {
+        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+            CameraSelector.LENS_FACING_FRONT
+        } else {
+            CameraSelector.LENS_FACING_BACK
+        }
+        bindCameraUseCases()
     }
     
     private fun takePhoto() {
@@ -99,6 +128,7 @@ class MainActivity : AppCompatActivity() {
         
         progressBar.visibility = android.view.View.VISIBLE
         captureButton.isEnabled = false
+        switchCameraButton.isEnabled = false
         
         imageCapture.takePicture(ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
@@ -108,15 +138,16 @@ class MainActivity : AppCompatActivity() {
                 analyzeImage(bitmap)
                 
                 image.close()
-                progressBar.visibility = android.view.View.GONE
-                captureButton.isEnabled = true
             }
             
             override fun onError(exception: ImageCaptureException) {
                 super.onError(exception)
-                Toast.makeText(this@MainActivity, "Capture failed: ${exception.message}", Toast.LENGTH_SHORT).show()
-                progressBar.visibility = android.view.View.GONE
-                captureButton.isEnabled = true
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Capture failed: ${exception.message}", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = android.view.View.GONE
+                    captureButton.isEnabled = true
+                    switchCameraButton.isEnabled = true
+                }
             }
         })
     }
@@ -137,37 +168,73 @@ class MainActivity : AppCompatActivity() {
             
             image = imageProcessor.process(image)
             
-            // For now, just simulate classification since we don't have the actual model setup
-            // In a real app, you would run inference with your model here
-            simulateClassification()
+            // Run analysis (for now, simulate since we don't have actual model inference)
+            runAnalysis()
             
         } catch (e: Exception) {
             e.printStackTrace()
             runOnUiThread {
                 Toast.makeText(this, "Analysis failed: ${e.message}", Toast.LENGTH_LONG).show()
+                progressBar.visibility = android.view.View.GONE
+                captureButton.isEnabled = true
+                switchCameraButton.isEnabled = true
             }
         }
     }
     
-    private fun simulateClassification() {
-        // Simulate a classification result for testing
-        // In your real app, replace this with actual model inference
-        runOnUiThread {
-            val randomIndex = (0 until labels.size).random()
-            val confidence = (70..95).random().toFloat()
-            
-            resultText.text = "Detected: ${labels[randomIndex]}"
-            confidenceText.text = "Confidence: ${"%.2f".format(confidence)}%"
-            
-            // Color code based on confidence
-            when {
-                confidence > 80 -> resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
-                confidence > 60 -> resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
-                else -> resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+    private fun runAnalysis() {
+        // Simulate processing time
+        Thread {
+            try {
+                // Simulate analysis time (2 seconds)
+                Thread.sleep(2000)
+                
+                // Simulate a classification result
+                val randomIndex = (0 until labels.size).random()
+                val confidence = (70..95).random().toFloat()
+                val conditionName = labels[randomIndex]
+                
+                runOnUiThread {
+                    displayResults(conditionName, confidence)
+                }
+                
+            } catch (e: Exception) {
+                e.printStackTrace()
+                runOnUiThread {
+                    Toast.makeText(this, "Analysis error", Toast.LENGTH_SHORT).show()
+                    progressBar.visibility = android.view.View.GONE
+                    captureButton.isEnabled = true
+                    switchCameraButton.isEnabled = true
+                }
             }
-            
-            Toast.makeText(this, "Analysis complete! (Simulated result)", Toast.LENGTH_SHORT).show()
+        }.start()
+    }
+    
+    private fun displayResults(conditionName: String, confidence: Float) {
+        resultText.text = "Detected: $conditionName"
+        confidenceText.text = "Confidence: ${"%.2f".format(confidence)}%"
+        
+        // Color code based on confidence
+        when {
+            confidence > 80 -> {
+                resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+                confidenceText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            }
+            confidence > 60 -> {
+                resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
+                confidenceText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
+            }
+            else -> {
+                resultText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+                confidenceText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+            }
         }
+        
+        progressBar.visibility = android.view.View.GONE
+        captureButton.isEnabled = true
+        switchCameraButton.isEnabled = true
+        
+        Toast.makeText(this, "Analysis complete!", Toast.LENGTH_SHORT).show()
     }
     
     override fun onRequestPermissionsResult(
