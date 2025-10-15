@@ -1,176 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="@color/white">
+    tools:context=".MainActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <androidx.camera.view.PreviewView
+        android:id="@+id/camera_preview"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/switch_camera_button"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Switch"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- App Header -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="DermoMask"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/black"
-            android:gravity="center"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="30dp" />
+    <Button
+        android:id="@+id/capture_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="32dp"
+        android:text="Capture &amp; Analyze"
+        android:textSize="16sp"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <!-- App Icon/Image -->
-        <ImageView
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:src="@drawable/ic_skin_care"
-            android:layout_gravity="center"
-            android:layout_marginBottom="20dp" />
+    <FrameLayout
+        android:id="@+id/loading_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible">
 
-        <!-- Welcome Message -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Skin Health Detection"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="@color/black"
-            android:gravity="center"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Description -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Get instant analysis of your skin condition using AI technology. Capture a photo of the affected area for detection."
-            android:textSize="16sp"
-            android:textColor="@color/gray"
-            android:gravity="center"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="40dp" />
-
-        <!-- How it works section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="How it works:"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Steps -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:orientation="vertical"
-            android:layout_marginBottom="40dp">
+            android:gravity="center_horizontal">
+
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 
             <TextView
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. Click the 'Start Analysis' button"
-                android:textSize="14sp"
-                android:textColor="@color/gray"
-                android:layout_marginBottom="5dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="2. Allow camera permissions"
-                android:textSize="14sp"
-                android:textColor="@color/gray"
-                android:layout_marginBottom="5dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="3. Capture a clear photo of the skin area"
-                android:textSize="14sp"
-                android:textColor="@color/gray"
-                android:layout_marginBottom="5dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="4. Get AI-powered analysis"
-                android:textSize="14sp"
-                android:textColor="@color/gray" />
+                android:layout_marginTop="8dp"
+                android:text="Analyzing..."
+                android:textColor="@android:color/white"
+                android:textSize="18sp"/>
         </LinearLayout>
-
-        <!-- Important Notes -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Important:"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="@color/red"
-            android:layout_marginBottom="10dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="• This app provides preliminary analysis only\n• Consult a healthcare professional for diagnosis\n• Ensure good lighting for accurate results\n• Keep the camera steady while capturing"
-            android:textSize="14sp"
-            android:textColor="@color/dark_gray"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="40dp" />
-
-        <!-- Start Analysis Button -->
-        <Button
-            android:id="@+id/btn_start_analysis"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Start Skin Analysis"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:backgroundTint="@color/colorPrimary"
-            android:textColor="@color/white"
-            android:padding="16dp"
-            android:layout_marginBottom="20dp" />
-
-        <!-- Camera Preview (Initially Hidden) -->
-        <FrameLayout
-            android:id="@+id/camera_container"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:visibility="gone"
-            android:background="@color/black"
-            android:layout_marginBottom="20dp">
-
-            <!-- Camera preview will be inserted here programmatically -->
-
-        </FrameLayout>
-
-        <!-- Capture Button (Initially Hidden) -->
-        <Button
-            android:id="@+id/btn_capture"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Capture Image"
-            android:textSize="16sp"
-            android:backgroundTint="@color/green"
-            android:textColor="@color/white"
-            android:padding="12dp"
-            android:visibility="gone"
-            android:layout_marginBottom="10dp" />
-
-        <!-- Retake Button (Initially Hidden) -->
-        <Button
-            android:id="@+id/btn_retake"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Retake Photo"
-            android:textSize="16sp"
-            android:backgroundTint="@color/gray"
-            android:textColor="@color/white"
-            android:padding="12dp"
-            android:visibility="gone" />
-
-    </LinearLayout>
-</ScrollView>
+    </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
