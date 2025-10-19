@@ -1,7 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Your existing theme -->
-    <style name="Base.Theme.DermoMask" parent="Theme.Material3.DayNight">
-        <!-- Your existing theme items -->
+    <!-- Your existing theme (keep whatever you have) -->
+    <style name="Theme.DermoMask" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_700</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
     </style>
 
     <!-- Add this splash theme -->
