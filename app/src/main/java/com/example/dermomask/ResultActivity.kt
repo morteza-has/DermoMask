@@ -7,6 +7,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.io.File
 
 class ResultActivity : AppCompatActivity() {
@@ -35,6 +37,9 @@ class ResultActivity : AppCompatActivity() {
         if (imageUriString != null) {
             val imageUri = Uri.parse(imageUriString)
             resultImageView.setImageURI(imageUri)
+            
+            // Save to history after displaying the result
+            saveToHistory(conditionName, confidence, imageUriString)
         }
 
         // Set text color based on confidence
@@ -45,5 +50,25 @@ class ResultActivity : AppCompatActivity() {
         }
         conditionTextView.setTextColor(color)
         confidenceTextView.setTextColor(color)
+    }
+
+    private fun saveToHistory(condition: String, confidence: Float, imageUri: String) {
+        val result = AnalysisResult(condition, confidence, imageUri)
+        
+        val sharedPreferences = getSharedPreferences("DermoMask", MODE_PRIVATE)
+        val historyJson = sharedPreferences.getString("analysis_history", "[]")
+        
+        val type = object : TypeToken<MutableList<AnalysisResult>>() {}.type
+        val historyList = Gson().fromJson<MutableList<AnalysisResult>>(historyJson, type) ?: mutableListOf()
+        
+        historyList.add(0, result) // Add to beginning (most recent first)
+        
+        // Keep only last 20 results to prevent storage issues
+        if (historyList.size > 20) {
+            historyList.removeAt(historyList.size - 1)
+        }
+        
+        val updatedJson = Gson().toJson(historyList)
+        sharedPreferences.edit().putString("analysis_history", updatedJson).apply()
     }
 }
