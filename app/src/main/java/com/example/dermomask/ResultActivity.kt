@@ -3,6 +3,7 @@ package com.example.dermomask
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +23,7 @@ class ResultActivity : AppCompatActivity() {
         val conditionTextView: TextView = findViewById(R.id.result_condition_text)
         val confidenceTextView: TextView = findViewById(R.id.result_confidence_text)
         val titleTextView: TextView = findViewById(R.id.result_title_text)
+        val backButton: Button = findViewById(R.id.btn_back_home)
 
         // Get data from Intent
         val conditionName = intent.getStringExtra("CONDITION_NAME") ?: "Unknown"
@@ -50,6 +52,14 @@ class ResultActivity : AppCompatActivity() {
         }
         conditionTextView.setTextColor(color)
         confidenceTextView.setTextColor(color)
+
+        // Back to home button
+        backButton.setOnClickListener {
+            val intent = Intent(this, HomeActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            startActivity(intent)
+            finish()
+        }
     }
 
     private fun saveToHistory(condition: String, confidence: Float, imageUri: String) {
@@ -70,5 +80,13 @@ class ResultActivity : AppCompatActivity() {
         
         val updatedJson = Gson().toJson(historyList)
         sharedPreferences.edit().putString("analysis_history", updatedJson).apply()
+    }
+
+    // Override back button to go to home
+    override fun onBackPressed() {
+        val intent = Intent(this, HomeActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        startActivity(intent)
+        finish()
     }
 }
