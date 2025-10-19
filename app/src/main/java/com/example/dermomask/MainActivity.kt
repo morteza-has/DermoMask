@@ -230,7 +230,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveBitmapToCache(bitmap: Bitmap): Uri? {
         return try {
-            val file = File(cacheDir, "captured_image.png")
+            // Use timestamp to create unique file names
+            val timeStamp = System.currentTimeMillis()
+            val file = File(cacheDir, "captured_image_${timeStamp}.png")
             val fOut = FileOutputStream(file)
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, fOut)
             fOut.flush()
