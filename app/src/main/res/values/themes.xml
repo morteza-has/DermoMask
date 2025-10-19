@@ -1,8 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Your existing theme -->
     <style name="Base.Theme.DermoMask" parent="Theme.Material3.DayNight">
-        <!-- Customize your light theme here. -->
+        <!-- Your existing theme items -->
     </style>
 
-    <style name="Theme.DermoMask" parent="Base.Theme.DermoMask" />
+    <!-- Add this splash theme -->
+    <style name="Theme.DermoMask.Splash" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_screen</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:navigationBarColor">@color/white</item>
+    </style>
 </resources>
