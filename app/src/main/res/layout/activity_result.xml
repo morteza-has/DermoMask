@@ -1,61 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:fillViewport="true"
     android:padding="16dp"
     android:background="@color/white">
 
-    <!-- Header -->
-    <TextView
-        android:id="@+id/result_title_text"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Analysis Result"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="16dp" />
+        android:orientation="vertical">
 
-    <!-- Result Image -->
-    <ImageView
-        android:id="@+id/result_image"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:layout_gravity="center"
-        android:scaleType="centerCrop"
-        android:background="@color/light_gray"
-        android:layout_marginBottom="24dp" />
+        <!-- Header -->
+        <TextView
+            android:id="@+id/result_title_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Analysis Result"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
 
-    <!-- Condition Text -->
-    <TextView
-        android:id="@+id/result_condition_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Detected: Condition"
-        android:textSize="20sp"
-        android:gravity="center"
-        android:layout_marginBottom="8dp" />
+        <!-- Result Image -->
+        <ImageView
+            android:id="@+id/result_image"
+            android:layout_width="300dp"
+            android:layout_height="300dp"
+            android:layout_gravity="center"
+            android:scaleType="centerCrop"
+            android:background="@color/light_gray"
+            android:layout_marginBottom="24dp" />
 
-    <!-- Confidence Text -->
-    <TextView
-        android:id="@+id/result_confidence_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Confidence: 95.5%"
-        android:textSize="18sp"
-        android:gravity="center"
-        android:layout_marginBottom="32dp" />
+        <!-- Condition Text -->
+        <TextView
+            android:id="@+id/result_condition_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Detected: Condition"
+            android:textSize="20sp"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
 
-    <!-- Back to Home Button -->
-    <Button
-        android:id="@+id/btn_back_home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Back to Home"
-        android:textSize="16sp"
-        android:backgroundTint="@color/colorPrimary"
-        android:textColor="@color/white"
-        android:padding="12dp" />
+        <!-- Confidence Text -->
+        <TextView
+            android:id="@+id/result_confidence_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Confidence: 95.5%"
+            android:textSize="18sp"
+            android:gravity="center"
+            android:layout_marginBottom="32dp" />
 
-</LinearLayout>
+        <!-- Back to Home Button -->
+        <Button
+            android:id="@+id/btn_back_home"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Back to Home"
+            android:textSize="16sp"
+            android:backgroundTint="@color/colorPrimary"
+            android:textColor="@color/white"
+            android:padding="12dp" />
+
+    </LinearLayout>
+
+</ScrollView>
