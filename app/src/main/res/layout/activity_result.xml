@@ -1,66 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
-    tools:context=".ResultActivity">
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white">
 
+    <!-- Header -->
+    <TextView
+        android:id="@+id/result_title_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Analysis Result"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Result Image -->
     <ImageView
         android:id="@+id/result_image"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_margin="16dp"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
         android:scaleType="centerCrop"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:srcCompat="@tools:sample/avatars" />
+        android:background="@color/light_gray"
+        android:layout_marginBottom="24dp" />
 
-    <androidx.cardview.widget.CardView
-        android:layout_width="0dp"
+    <!-- Condition Text -->
+    <TextView
+        android:id="@+id/result_condition_text"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        app:layout_constraintTop_toBottomOf="@id/result_image"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:text="Detected: Condition"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+    <!-- Confidence Text -->
+    <TextView
+        android:id="@+id/result_confidence_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Confidence: 95.5%"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:layout_marginBottom="32dp" />
 
-            <TextView
-                android:id="@+id/result_title_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Analysis Result"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"/>
+    <!-- Back to Home Button -->
+    <Button
+        android:id="@+id/btn_back_home"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Back to Home"
+        android:textSize="16sp"
+        android:backgroundTint="@color/colorPrimary"
+        android:textColor="@color/white"
+        android:padding="12dp" />
 
-            <TextView
-                android:id="@+id/result_condition_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Detected: Acne"
-                android:textSize="18sp" />
-
-            <TextView
-                android:id="@+id/result_confidence_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Confidence: 85.72%"
-                android:textSize="16sp" />
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
