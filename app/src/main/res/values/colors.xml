@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary brand colors -->
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    
+    <!-- Additional colors for the home screen -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
-    <color name="light_gray">#F5F5F5</color>
-    <color name="dark_gray">#666666</color>
-    <color name="gray">#9E9E9E</color>
-    <color name="teal_200">#FF03DAC5</color>  <!-- Add this line -->
+    <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Colors for home screen and history -->
+    <color name="light_gray">#F0F0F0</color>
+    <color name="dark_gray">#666666</color>
+    <color name="gray">#888888</color>
     <color name="red">#FF0000</color>
-    <color name="ic_launcher_background">#FFFFFF</color> <!-- Or your preferred background color -->
+    
+    <!-- Icon background color -->
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>
