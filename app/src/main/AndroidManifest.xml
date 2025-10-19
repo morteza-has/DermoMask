@@ -10,22 +10,13 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/app_icon"
-        android:roundIcon="@mipmap/round_app_icon"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/round_app_icon"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+        android:theme="@style/Theme.DermoMask"
         tools:targetApi="31">
-
-        <activity
-        android:name=".HomeActivity"
-        android:exported="true">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
         
-        <!-- Splash Activity -->
+        <!-- Splash Activity as launcher -->
         <activity
             android:name=".SplashActivity"
             android:theme="@style/Theme.DermoMask.Splash"
@@ -36,7 +27,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Main Activity -->
+        <!-- Home Activity -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="false" />
+
+        <!-- Main Activity (Camera) -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
@@ -44,8 +40,6 @@
         <!-- Result Activity -->
         <activity
             android:name=".ResultActivity"
-            android:label="Analysis Result"
-            android:parentActivityName=".MainActivity"
             android:exported="false" />
 
     </application>
