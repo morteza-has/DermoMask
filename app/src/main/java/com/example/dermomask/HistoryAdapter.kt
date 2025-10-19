@@ -35,10 +35,9 @@ class HistoryAdapter(private val historyList: List<AnalysisResult>) :
         val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
         holder.dateText.text = dateFormat.format(Date(result.timestamp))
         
-        // Load image using Glide or similar library
+        // Load image using Glide - removed placeholder to fix build error
         Glide.with(holder.itemView.context)
             .load(result.imagePath)
-            .placeholder(R.drawable.placeholder)
             .into(holder.imageView)
     }
 
